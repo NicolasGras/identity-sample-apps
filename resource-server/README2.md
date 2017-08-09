@@ -1,20 +1,31 @@
 # Deploying the Resource Server sample application
 
-This sample application fulfills the role of a Resource Server defined in the
-OAuth2 specification. In practical terms, any application that has API endpoints
-that require an OAuth2 token to access is fulfilling the role of a Resource
-Server.
+This sample application implements basic TODO functionality. It fulfills the
+role of a Resource Server in this suite of sample applications, one of the
+[four roles](https://tools.ietf.org/html/rfc6749#section-1.1) described in the
+OAuth2 specification. In practical terms, any application that has protected
+API endpoints requiring an OAuth2 token to access is fulfilling the role of a
+Resource Server.
 
-A client application, such as the authcode sample app, may try to access the
-resource server by passing an access token along with its requests in the
-`Authorization: bearer <token-here>` header.  The access token represents a
-user's delegated authorization and contains a list of scopes, or permissions,
-that user has. The Resource Server performs access control by checking for
-required scopes in the access token before returning a response.  If the token
-is valid and contains the correct scopes, the resource server will return a
+In this sample application the protected endpoints are:
+ * `GET /todo` to list TODO items. Requires the access token to contain
+ `todo.read` scope.
+ * `POST /todo` to create a TODO item. Requires the access token to contain
+ `todo.write` scope. Example response: `{"todo":"<content>"}`
+ * `DELETE /todo/{id}` to delete a TODO item. Requires the access token to
+ contain `todo.write` scope.
+
+A client application such as the [authcode sample app](../authcode) may try to
+access the resource server by passing an access token along with its requests
+in the `Authorization: bearer <token-here>` header.  The access token
+represents a user's delegated authorization and contains a list of scopes, or
+permissions, that user has. The Resource Server performs access control by
+checking for required scopes in the access token before returning a response.
+If the token is valid and contains the correct scopes, the resource server will
+return a
 response to the request.
 
-////////////// TODO >>>>>>>>>>>>>>>>>>>>
+# ////////////// TODO >>>>>>>>>>>>>>>>>>>>
 # Deploying the Resource Server with manual authorization server configuration
 
 # Deploying the Resource Server sample application using the Pivotal Single
@@ -31,26 +42,66 @@ SSO Service that is visible to your Org.
 this plan. For new plans, an operator may need to [create a
 user](http://docs.pivotal.io/p-identity/1-4/manage-users.html).
 
-### Step 0: Create an identity plan service instance
-### Step 1: Update your manifest.yml with the service plan
+### Step 0: Create an identity service instance
+
+Using the CF CLI, login as a user with the [Space
+Developer](https://docs.cloudfoundry.org/concepts/roles.html#roles) role and
+target the space where you'd like the sample app to reside.
+
+    cf api api.<your-domain>
+    cf login
+    cf target -o <your-org> -s <your-space>
+
+All of the sample apps in this repository need to be bound to an identity
+service instance. If you have previously deployed one of the other sample apps,
+you can reuse the service instance you created at that time.  You can
+check if you have any existing service instances in your 
+space by running
+
+    cf services 
+
+If you don't see any service instances that have already been created for your
+space you will need to create a new one. To create a service instance, first
+list the available identity plans using
+
+    cf marketplace -s p-identity
+    
+If you do not see any plans listed, you will need help from an administrator to
+create and configure a plan. Assuming you have at least one plan available in
+the marketplace, create a service instance in your space by running
+
+    cf create-service p-identity <plan-name> p-identity-sample-instance
+    
+The name of your service instance can be whatever you like, but we have chosen
+`p-identity-sample-instance` to match the name we have pre-specified in the
+[resource server sample application manifest](./manifest.yml).
+
+### Step 1: Update resource server manifest.yml with the name of your identity service instance
+
+The [`manifest.yml`](./manifest.yml) includes [a configuration
+block](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#services-block)
+called `services`. Your app will be bound to any service instances you list in
+this section when it is pushed.
+
+If you used the exact commands provided in Step 2, you should have a created an
+instance of the identity service called `p-identity-sample-instance`. Ensure
+this value appears in the `services` section of the `manifest.yml`.
+
 ### Step 2: Build and push the application
 
-
-The resource server needs to know the Auth Server (or UAA) location in order to retrieve the token key to validate the tokens. 
-Set the Auth Server location as the value of the auth_domain environment variable for the authcode sample app.
+The resource server needs to know the Auth Server (or UAA) location in order to
+retrieve the token key to validate the tokens.  Set the Auth Server location as
+the value of the auth_domain environment variable for the authcode sample app.
 
 `cf set-env <RESOURCE_SERVER_APP_NAME> AUTH_SERVER <AUTH_SERVER_LOCATION>`
 
-NOTE: Beginning with our Spring Boot 1.5 version of the identity sample applications, bind the Resource Server to the Singl†e Sign-On Service instead of providing the AUTH_SERVER value.
+NOTE: Beginning with our Spring Boot 1.5 version of the identity sample
+applications, bind the Resource Server to the Singl†e Sign-On Service instead
+of providing the AUTH_SERVER value.
 
-For example, for a given SSO service plan/UAA identity zone, the location would be `https://subdomain.login.my-domain.org`
+For example, for a given SSO service plan/UAA identity zone, the location would
+be `https://subdomain.login.my-domain.org`
 
-It has three API endpoints:
- * `GET /todo` to list TODO items. Requires the user to have `todo.read` scope.
- * `POST /todo` to create a TODO item. Requires `todo.write` scope. Example body: `{"todo":"<content>"}`
- * `DELETE /todo/{id}` to delete a TODO item. Requires `todo.write` scope.
-
-To push the app, follow steps [1](#step-1) and [2](#step-2) of the previous section.
 
 ## Setting up Authcode Sample App to use Resource Server
 
