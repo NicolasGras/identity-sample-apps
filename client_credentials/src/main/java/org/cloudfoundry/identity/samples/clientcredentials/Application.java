@@ -1,5 +1,6 @@
 package org.cloudfoundry.identity.samples.clientcredentials;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +16,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.OAuth2ClientContext;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsResourceDetails;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -31,6 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableAutoConfiguration
 @ComponentScan
 @Controller
+@EnableConfigurationProperties
+@EnableOAuth2Client
 public class Application {
 
     public static void main(String[] args) {
@@ -46,6 +49,9 @@ public class Application {
     @Value("${ssoServiceUrl:example.com}")
     private String ssoServiceUrl;
 
+    @Value("${resourceServerUrl}")
+    private String resourceServerUrl;
+
     @Autowired
     @Qualifier("clientCredentialsRestTemplate")
     private OAuth2RestTemplate clientCredentialsRestTemplate;
@@ -60,6 +66,7 @@ public class Application {
         if (ssoServiceUrl.equals("example.com")) {
             return "configure_warning";
         }
+
         model.addAttribute("token", toPrettyJsonString(getToken()));
         return "client_credentials";
     }
@@ -68,23 +75,29 @@ public class Application {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
     }
 
-    @Configuration
-    @EnableConfigurationProperties
-    @EnableOAuth2Client
-    public static class Config {
-        @Bean
-        @ConfigurationProperties(prefix = "security.oauth2.client")
-        ClientCredentialsResourceDetails clientCredentialsResourceDetails() {
-            return new ClientCredentialsResourceDetails();
-        }
 
-        @Bean
-        OAuth2RestTemplate clientCredentialsRestTemplate() {
-            OAuth2RestTemplate restTemplate = new OAuth2RestTemplate(clientCredentialsResourceDetails());
-            return restTemplate;
-        }
+    @Bean
+    @ConfigurationProperties(prefix = "security.oauth2.client")
+    public ClientCredentialsResourceDetails clientCredentialsResourceDetails() {
+        return new ClientCredentialsResourceDetails();
     }
-    
+
+    @Bean
+    public OAuth2RestTemplate clientCredentialsRestTemplate() {
+        OAuth2RestTemplate restTemplate = new OAuth2RestTemplate(clientCredentialsResourceDetails());
+        return restTemplate;
+    }
+
+    @Scheduled(fixedRate=30000)
+    public void writeTodo() {
+        if (resourceServerUrl.equals("https://resource-server.domain")) {
+            return;
+        }
+        Todo todo = new Todo();
+        todo.setTodo("Scheduled call by client at " + LocalDateTime.now().toString());
+        new TodoService(clientCredentialsRestTemplate, resourceServerUrl).create(todo);
+    }
+
     private Map<String, ?> getToken() throws Exception {
         OAuth2AccessToken accessToken = clientCredentialsRestTemplate.getAccessToken();
         if (accessToken != null) {
@@ -94,4 +107,6 @@ public class Application {
         }
         return null;
     }
+
+
 }
