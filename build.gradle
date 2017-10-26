@@ -1,7 +1,35 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.8.RELEASE")
+    classpath 'io.spring.gradle:dependency-management-plugin:1.0.3.RELEASE'
+  }
+}
+
 allprojects {
   task hello {
     doLast { task ->
       println "I'm $task.project.name"
     }
   }
+}
+
+subprojects {
+  apply plugin: 'java'
+  apply plugin: "org.springframework.boot"
+
+  repositories {
+    maven { url "https://repo.spring.io/libs-release-local" }
+    mavenCentral()
+  }
+
+  dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    compile 'org.springframework.cloud:spring-cloud-starter-oauth2'
+    compile 'org.springframework.cloud:spring-cloud-cloudfoundry-connector:1.2.0.RELEASE'
+    compile 'io.pivotal.spring.cloud:spring-cloud-sso-connector:1.1.0.RELEASE'
+  }
+
 }
