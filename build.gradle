@@ -27,7 +27,6 @@ subprojects {
 
   dependencies {
     compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    compile 'org.springframework.cloud:spring-cloud-starter-oauth2:1.2.1.RELEASE'
     compile 'org.springframework.cloud:spring-cloud-cloudfoundry-connector:1.2.0.RELEASE'
     compile 'io.pivotal.spring.cloud:spring-cloud-sso-connector:2.1.1.RELEASE'
     //compile files('../../spring-cloud-sso-connector/build/libs/spring-cloud-sso-connector-2.1.2.RELEASE.jar')
