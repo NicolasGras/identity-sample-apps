@@ -19,7 +19,7 @@ Set the correct CF API target in the CF CLI and login as a Space Developer into 
     
 Go to your application directory and push the app.
 
-    ./gradlew build
+    ../gradlew build
     cf push
 
 **NOTE:** Your application is expected to crash on start-up until it is bound to the Single Sign-on Service using the instructions in the next section.
